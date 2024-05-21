@@ -74,7 +74,7 @@ def create_schedule(students):
             print(f"Processing {day} at {time_slot}:00 with slot_index {slot_index}")
 
             available_students = [s for s in students if s.availability[day][slot_index] == "A" and s.assigned_hours < 16]
-            available_students.sort(key=lambda x: x.assigned_hours) # is it necessary to sort students
+            # available_students.sort(key=lambda x: x.assigned_hours) # is it necessary to sort students
 
             assigned_hours_map[day][time_slot] = 0
             while assigned_hours_map[day][time_slot] < required:
@@ -138,7 +138,7 @@ def main():
     students = load_students(file_path)
     schedule = create_schedule(students)
     df = pd.DataFrame(schedule).transpose()
-    df.columns = ['8:00-9:00', '9:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-13:00', '13:00-14:00', '14:00-15:00', '15:00-16:00', '16:00-17:00', '17:00-18:00', '18:00-19:00', '19:00-20:00', '20:00-21:00']
+    df.columns = ['7:55-8:55am', '8:55-9:55am', '9:55-10:55am', '10:55-11:55am', '11:55-12:55pm', '12:55-13:55pm', '13:55-14:55pm', '14:55-16:00pm', '16:00-17:00pm', '17:00-18:00pm', '18:00-19:00pm', '19:00-20:00pm', '20:00-22:00pm']
     print(df)
     df.to_csv("./data/output.csv", sep=',')
 
