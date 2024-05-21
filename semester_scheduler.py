@@ -57,11 +57,15 @@ def create_schedule(students):
         'Sunday': {12: 0, 13: 1, 14: 2, 15: 3, 16: 4, 17: 5, 18: 6, 19: 7, 20: 8}
     }
 
+    assigned_hours_map = defaultdict(lambda: defaultdict(int))
+
     students.sort(key=lambda x: x.seniority, reverse=True)
 
 
     for day, slots in time_slots.items():
         for time_slot, required in slots:
+            # assigned_hours_map[day][time_slot] = required
+
             if time_slot not in time_slot_map[day]:
                 continue  # skip invalid time slots
             slot_index = time_slot_map[day][time_slot]
@@ -72,28 +76,28 @@ def create_schedule(students):
             available_students = [s for s in students if s.availability[day][slot_index] == "A" and s.assigned_hours < 16]
             available_students.sort(key=lambda x: x.assigned_hours) # is it necessary to sort students
 
-            assigned_count = 0
-            while assigned_count < required:
+            assigned_hours_map[day][time_slot] = 0
+            while assigned_hours_map[day][time_slot] < required:
                 to_assign = []
                 for student in available_students:
-                    if assigned_count >= required:
+                    if assigned_hours_map[day][time_slot] >= required:
                         break
                     if all(time_slot + i in time_slot_map[day] and student.availability[day][time_slot_map[day][time_slot + i]] == "A" for i in range(2)):  # Ensure at least 2 consecutive hours
                         to_assign.append((student, time_slot))
-                        assigned_count += 1
+                        assigned_hours_map[day][time_slot] += 1
 
                         # asssign next hour if available
-                        if assigned_count < required and time_slot + 1 in time_slot_map[day] and student.availability[day][time_slot_map[day][time_slot + 1]] == "A":
+                        if assigned_hours_map[day][time_slot+1] < time_slots[day][slot_index][1] and time_slot + 1 in time_slot_map[day] and student.availability[day][time_slot_map[day][time_slot + 1]] == "A":
                             to_assign.append((student, time_slot + 1))
-                            assigned_count += 1
+                            assigned_hours_map[day][time_slot+1] += 1
 
                 # fill remaining slots if needed
                 for student in available_students:
-                    if assigned_count >= required:
+                    if assigned_hours_map[day][time_slot] >= required:
                         break
                     if student.name not in [s.name for s, _ in to_assign] and student.assigned_hours < 16:
                         to_assign.append((student, time_slot))
-                        assigned_count += 1
+                        assigned_hours_map[day][time_slot] += 1
 
                 # Assign students to schedule
                 for student, ts in to_assign:
@@ -103,7 +107,7 @@ def create_schedule(students):
                         student.assigned_shifts[day].append(ts)
 
                 # If we still haven't assigned enough people, move to the next available students
-                if assigned_count < required:
+                if assigned_hours_map[day][time_slot] < required:
                     available_students = [s for s in available_students if s.assigned_hours < 16]
 
     formatted_schedule = {day: {time: ', '.join(names) for time, names in times.items()} for day, times in schedule.items()}
