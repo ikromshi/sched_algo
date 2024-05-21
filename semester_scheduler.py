@@ -7,6 +7,7 @@ class Student:
         self.seniority = seniority
         self.availability = availability
         self.assigned_hours = 0
+        self.assigned_shifts = defaultdict(list)
 
 # function to create the schedule;
 def create_schedule(students):
@@ -58,11 +59,34 @@ def create_schedule(students):
             available_students = [s for s in students if s.availability[day][slot_index] == "A" and s.assigned_hours < 16]
             available_students.sort(key=lambda x: x.assigned_hours)
 
-            # make sure to assign consecutive hours
+            # ensure consecutive hours if possible
+            assigned_count = 0
+            for student in available_students:
+                if assigned_count >= 16:
+                    break
+                if all(student.availability[day][time_slot_map[day][time_slot + i]] == "A" for i in range(2)): # ensure at least two consecutive hours;
+                    schedule[day][time_slot].append(student.name)
+                    student.assigned_hours += 1
+                    student.assigned_shifts[day].append(time_slot)
+                    assigned_count += 1
 
-            for student in available_students[:required]:
-                schedule[day][time_slot].append(student.name)
-                student.assigned_hours += 1
+                    # assign next hour if available
+                    if assigned_count < required and student.availability[day][time_slot_map[day][time_slot + 1]] == "A":
+                        schedule[day][time_slot + 1].append(student.name)
+                        student.assigned_hours += 1
+                        student.assigned_shifts[day].append(time_slot + 1)
+                        assigned_count += 1
+            
+            # fill in the remaining slots if needed
+            for student in available_students:
+                if assigned_count >= required:
+                    break
+                if student not in schedule[day][time_slot] and student.assigned_hours < 16:
+                    schedule[day][time_slot].append(student.name)
+                    student.assigned_hours += 1
+                    student.assigned_shifts[day].append(time_slot)
+                    assigned_count += 1
+                
     formatted_schedule = {day: {time: ', '.join(names) for time, names in times.items()} for day, times in schedule.items()}
 
     return formatted_schedule
@@ -91,16 +115,18 @@ def load_students(file_path):
 
 
 def main():
-    _file_path = "./spring_schedule_upd.csv"
+    _file_path = "./data/spring_schedule_upd.csv"
 
 
     students = load_students(_file_path)
     schedule = create_schedule(students)
     df = pd.DataFrame(schedule).transpose()
     print(df)
-    df.to_csv("output.csv", sep=',')
+    df.to_csv("./data/output.csv", sep=',')
 
 
 
 if __name__ == "__main__":
     main()
+
+# 
