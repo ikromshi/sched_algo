@@ -1,3 +1,4 @@
+import json
 import pandas as pd
 from collections import defaultdict
 
@@ -22,6 +23,37 @@ def create_schedule(students):
     # the weekly schedule with required number of workers per time slot
     schedule = defaultdict(lambda: defaultdict(list))
     
+    # maps the abstract slot in the algorithm to a specific slot in the schedule
+    specify_slot = defaultdict(lambda: defaultdict(str))
+    specify_slot["Monday"] = {
+            8: "7:55-8:55am",
+            9: "8:55-9:55am",
+            10: "9:55-10:55am",
+            11: "10:55-11:55am",
+            12: "11:55-12:55pm",
+            13: "12:55-1:55pm",
+            14: "1:55-2:55pm",
+            15: "2:55-4:00pm",
+            16: "4:00-5:00pm",
+            17: "5:00-6:00pm",
+            18: "6:00-7:00pm",
+            19: "7:00-8:00pm",
+            20: "8:00-9:00pm"
+        }
+    specify_slot["Tuesday"] = {
+            8: "7:55-9:20am",
+            9: "9:20-10:45am",
+            10: "10:45-12:10am",
+            12: "12:10-1:05pm",
+            13: "1:05-2:30pm",
+            14: "2:30-3:55pm",
+            16: "3:55-5:20pm",
+            17: "5:20-6:45pm",
+            18: "6:45-8:00pm",
+            20: "8:00-10:00pm"
+        }
+    
+
     # time slots and required number of workers
     time_slots = {
         'Monday': [
@@ -58,6 +90,23 @@ def create_schedule(students):
     }
 
     assigned_hours_map = defaultdict(lambda: defaultdict(int))
+    
+    day_slot_person = defaultdict(lambda: defaultdict(list))
+    """
+    {"monday": {
+        "7:55-8:55": ["Ikrom", "Jordan", "Hadil"],
+    }}
+    """
+
+    # adds a student to a specific shift slot in a day
+    def add_student(day, slot, student):
+        if day == "Tuesday" or day == "Thursday":
+            shift_time = specify_slot['Tuesday'][slot]
+            day_slot_person[day][shift_time].append(student.name)
+        else:
+            shift_time = specify_slot["Monday"][slot]
+            day_slot_person[day][shift_time].append(student.name)
+
 
     students.sort(key=lambda x: x.seniority, reverse=True)
 
@@ -84,11 +133,13 @@ def create_schedule(students):
                         break
                     if all(time_slot + i in time_slot_map[day] and student.availability[day][time_slot_map[day][time_slot + i]] == "A" for i in range(2)):  # Ensure at least 2 consecutive hours
                         to_assign.append((student, time_slot))
+                        # add_student(day, time_slot, student) # testing day_slot_person
                         assigned_hours_map[day][time_slot] += 1
 
                         # asssign next hour if available
                         if assigned_hours_map[day][time_slot+1] < time_slots[day][slot_index][1] and time_slot + 1 in time_slot_map[day] and student.availability[day][time_slot_map[day][time_slot + 1]] == "A":
                             to_assign.append((student, time_slot + 1))
+                            # add_student(day, time_slot, student) # testing day_slot_person
                             assigned_hours_map[day][time_slot+1] += 1
 
                 # fill remaining slots if needed
@@ -97,6 +148,7 @@ def create_schedule(students):
                         break
                     if student.name not in [s.name for s, _ in to_assign] and student.assigned_hours < 16:
                         to_assign.append((student, time_slot))
+                        # add_student(day, time_slot, student) # testing day_slot_person
                         assigned_hours_map[day][time_slot] += 1
 
                 # Assign students to schedule
@@ -105,13 +157,14 @@ def create_schedule(students):
                         schedule[day][ts].append(student.name)
                         student.assigned_hours += 1
                         student.assigned_shifts[day].append(ts)
+                        add_student(day, ts, student) # testing day_slot_person
 
                 # If we still haven't assigned enough people, move to the next available students
                 if assigned_hours_map[day][time_slot] < required:
                     available_students = [s for s in available_students if s.assigned_hours < 16]
 
     formatted_schedule = {day: {time: ', '.join(names) for time, names in times.items()} for day, times in schedule.items()}
-    return formatted_schedule
+    return (formatted_schedule, day_slot_person)
 
 def load_students(file_path):
     df = pd.read_csv(file_path)
@@ -138,11 +191,12 @@ def main():
     students = load_students(file_path)
     studentsDF = pd.DataFrame(students)
     studentsDF.to_json("./schedule.json")
-    schedule = create_schedule(students)
-    df = pd.DataFrame(schedule).transpose()
-    df.to_json("./data/output.json")
-    df.columns = ['7:55-8:55am', '8:55-9:55am', '9:55-10:55am', '10:55-11:55am', '11:55-12:55pm', '12:55-13:55pm', '13:55-14:55pm', '14:55-16:00pm', '16:00-17:00pm', '17:00-18:00pm', '18:00-19:00pm', '19:00-20:00pm', '20:00-22:00pm']
-    print(df)
+    schedule, new_schedule = create_schedule(students)
+    
+    with open("output_json.json", "w") as outfile: 
+        json.dump(new_schedule, outfile)
+
+    # print(schedule_df)
 
 if __name__ == "__main__":
     main()
