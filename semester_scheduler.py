@@ -140,8 +140,8 @@ def main():
     studentsDF.to_json("./schedule.json")
     schedule = create_schedule(students)
     df = pd.DataFrame(schedule).transpose()
-    df.to_json("./data/output.json")
     df.columns = ['7:55-8:55am', '8:55-9:55am', '9:55-10:55am', '10:55-11:55am', '11:55-12:55pm', '12:55-13:55pm', '13:55-14:55pm', '14:55-16:00pm', '16:00-17:00pm', '17:00-18:00pm', '18:00-19:00pm', '19:00-20:00pm', '20:00-22:00pm']
+    df.to_json("./data/output.json")
     print(df)
 
 if __name__ == "__main__":

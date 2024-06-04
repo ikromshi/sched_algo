@@ -193,10 +193,9 @@ def main():
     studentsDF.to_json("./schedule.json")
     schedule, new_schedule = create_schedule(students)
     
-    with open("output_json.json", "w") as outfile: 
+    with open("./data/schedule.json", "w") as outfile: 
         json.dump(new_schedule, outfile)
 
-    # print(schedule_df)
 
 if __name__ == "__main__":
     main()
