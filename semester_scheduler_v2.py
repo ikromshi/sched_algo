@@ -38,7 +38,7 @@ def create_schedule(students):
             17: "5:00-6:00pm",
             18: "6:00-7:00pm",
             19: "7:00-8:00pm",
-            20: "8:00-9:00pm"
+            20: "8:00-10:00pm"
         }
     specify_slot["Tuesday"] = {
             8: "7:55-9:20am",
@@ -110,6 +110,25 @@ def create_schedule(students):
 
     students.sort(key=lambda x: x.seniority, reverse=True)
 
+    # formats the schedule into what is later to be sent to the UI
+    def format_schedule(unformatted_schedule):
+        formatted_schedule = {day: {time: ', '.join(names) for time, names in times.items()} for day, times in unformatted_schedule.items()}
+        formatted_schedule["Friday"]["8:00-10:00pm"] = ""
+        formatted_schedule["Saturday"]["7:55-8:55am"] = ""
+        formatted_schedule["Saturday"]["8:55-9:55am"] = ""
+        formatted_schedule["Saturday"]["9:55-10:55am"] = ""
+        formatted_schedule["Saturday"]["10:55-11:55am"] = ""
+        formatted_schedule["Saturday"]["5:00-6:00pm"] = ""
+        formatted_schedule["Saturday"]["6:00-7:00pm"] = ""
+        formatted_schedule["Saturday"]["7:00-8:00pm"] = ""
+        formatted_schedule["Saturday"]["8:00-10:00pm"] = ""
+        formatted_schedule["Sunday"]["7:55-8:55am"] = ""
+        formatted_schedule["Sunday"]["8:55-9:55am"] = ""
+        formatted_schedule["Sunday"]["9:55-10:55am"] = ""
+        formatted_schedule["Sunday"]["10:55-11:55am"] = ""
+
+
+        return formatted_schedule
 
     for day, slots in time_slots.items():
         for time_slot, required in slots:
@@ -163,8 +182,8 @@ def create_schedule(students):
                 if assigned_hours_map[day][time_slot] < required:
                     available_students = [s for s in available_students if s.assigned_hours < 16]
 
-    formatted_schedule = {day: {time: ', '.join(names) for time, names in times.items()} for day, times in schedule.items()}
-    return (formatted_schedule, day_slot_person)
+    formatted_schedeule = format_schedule(day_slot_person)
+    return formatted_schedeule
 
 def load_students(file_path):
     df = pd.read_csv(file_path)
@@ -191,7 +210,7 @@ def main():
     students = load_students(file_path)
     studentsDF = pd.DataFrame(students)
     studentsDF.to_json("./schedule.json")
-    schedule, new_schedule = create_schedule(students)
+    new_schedule = create_schedule(students)
     
     with open("./data/schedule.json", "w") as outfile: 
         json.dump(new_schedule, outfile)
